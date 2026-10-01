@@ -1,0 +1,5 @@
+schema: spec-driven
+context: |
+  FieldClear is a simulated Alexa+ web app for a small mechanical shop.
+  Next.js 15 App Router, TypeScript, Tailwind, shadcn/ui.
+  Tools are in-process and MCP-shaped. No real SMS, no Alexa skill certification.
