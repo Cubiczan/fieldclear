@@ -12,6 +12,38 @@ export type ToolName =
   | "jobs.lookup"
   | "sms.draft";
 
+export type JevChoiceName = "approve" | "hold" | "deny";
+
+/** Calibrated Jev signal attached to a policy decision. A decision aid, not a clearance. */
+export type JevGateView = {
+  source: "api" | "fallback";
+  model: string;
+  choice: JevChoiceName;
+  confidence: number;
+  probabilities: Record<JevChoiceName, number>;
+  nouls: {
+    withinHardCaps: number;
+    tradeMismatch: number;
+    notesNeedReview: number;
+    slaPressure: number;
+  };
+  disclaimer: string;
+  applied: boolean;
+  hardRuleBlocked: boolean;
+  primary: boolean;
+  dualRun: boolean;
+  shopDecision: PolicyDecisionName;
+  jevDecision: PolicyDecisionName;
+  matchesShop: boolean;
+  fallbackReason?: string;
+};
+
+export type JevRuntimeMode = {
+  mode: "fallback" | "advisory" | "primary";
+  label: string;
+  note: string;
+};
+
 export type PolicyResult = {
   id: string;
   decision: PolicyDecisionName;
@@ -27,6 +59,7 @@ export type PolicyResult = {
   techName?: string;
   remainingDailyCents?: number;
   memo: string;
+  jev?: JevGateView;
 };
 
 export type JobView = {
@@ -90,6 +123,7 @@ export type ApprovalCard = {
   jobTitle?: string;
   customerName?: string;
   ruleIds: string[];
+  jev?: JevGateView;
 };
 
 export type DraftCard = {
@@ -135,4 +169,5 @@ export type AuditSnapshot = {
 export type PlannerStatus = {
   kind: PlannerKind;
   note: string;
+  jev: JevRuntimeMode;
 };

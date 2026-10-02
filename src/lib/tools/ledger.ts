@@ -133,6 +133,19 @@ export function appendLedger(args: Record<string, unknown>): McpToolResult {
       reason: decision.reason,
       ruleIds: decision.ruleIds,
       memo: decision.memo,
+      ...(decision.jev
+        ? {
+            jevSource: decision.jev.source,
+            jevModel: decision.jev.model,
+            jevChoice: decision.jev.choice,
+            jevConfidence: decision.jev.confidence,
+            jevApplied: decision.jev.applied,
+            jevHardRuleBlocked: decision.jev.hardRuleBlocked,
+            jevShopDecision: decision.jev.shopDecision,
+            jevDecision: decision.jev.jevDecision,
+            jevDisclaimer: decision.jev.disclaimer,
+          }
+        : {}),
     },
   });
   const structured: LedgerResult = {

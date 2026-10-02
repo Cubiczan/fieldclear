@@ -24,7 +24,7 @@ import {
 } from "./types";
 
 type RegisteredTool = McpToolDefinition & {
-  call: (args: Record<string, unknown>) => McpToolResult;
+  call: (args: Record<string, unknown>) => McpToolResult | Promise<McpToolResult>;
 };
 
 const catalog: RegisteredTool[] = [policyTool, ledgerTool, jobsTool, smsTool];
@@ -45,7 +45,7 @@ export async function callTool(
   if (!tool) {
     return textResult(`Unknown tool "${name}".`, null, true);
   }
-  return tool.call(args);
+  return await tool.call(args);
 }
 
 export function listPrompts(): McpPrompt[] {

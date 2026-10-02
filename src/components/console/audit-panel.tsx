@@ -5,6 +5,19 @@ import { formatShopTime } from "@/lib/data/clock";
 import type { AuditSnapshot } from "@/lib/types";
 import { RotateCcw } from "lucide-react";
 
+function jevAuditLine(payload: Record<string, unknown>): string | null {
+  const choice = payload.jevChoice;
+  const confidence = payload.jevConfidence;
+  if (typeof choice !== "string" || typeof confidence !== "number") return null;
+  const stance =
+    payload.jevHardRuleBlocked === true
+      ? "hard deny kept"
+      : payload.jevApplied === true
+        ? "used for this gate"
+        : "advisory";
+  return `Jev ${choice} · ${Math.round(confidence * 100)}% · ${stance} · decision aid`;
+}
+
 const actionLabel: Record<string, string> = {
   "ledger.genesis": "Opened",
   "spend.approve": "Approved",
@@ -59,6 +72,11 @@ export function AuditPanel({
                   </time>
                 </div>
                 <p className="mt-1.5 text-sm leading-snug">{entry.summary}</p>
+                {jevAuditLine(entry.payload) ? (
+                  <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                    {jevAuditLine(entry.payload)}
+                  </p>
+                ) : null}
                 <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                   {entry.hash.slice(0, 12)} · {entry.actor}
                 </p>
