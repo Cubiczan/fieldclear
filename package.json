@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "check:loop": "tsx scripts/check-loop.ts"
+    "check:loop": "tsx scripts/check-loop.ts",
+    "test": "tsx --test --test-concurrency=1 src/lib/jev/client.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1144.0",

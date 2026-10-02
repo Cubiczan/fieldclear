@@ -182,7 +182,11 @@ export function FieldConsole({
           if (wait) await sleep(wait);
           lastReveal = Date.now();
           if (event.type === "meta") {
-            setPlannerState({ kind: event.planner, note: event.note });
+            setPlannerState((current) => ({
+              kind: event.planner,
+              note: event.note,
+              jev: current.jev,
+            }));
           } else if (event.type === "step") {
             stepsRef.current = [...stepsRef.current, event.step];
             setLiveSteps(stepsRef.current);
@@ -298,14 +302,24 @@ export function FieldConsole({
             </p>
           </div>
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge variant="outline" className="h-6 cursor-default px-2">
-              {plannerState.kind === "bedrock" ? "Bedrock Converse" : "Local planner"}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>{plannerState.note}</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="h-6 cursor-default px-2">
+                {plannerState.kind === "bedrock" ? "Bedrock Converse" : "Local planner"}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{plannerState.note}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="h-6 cursor-default px-2">
+                {plannerState.jev.label}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{plannerState.jev.note}</TooltipContent>
+          </Tooltip>
+        </div>
       </header>
 
       <div className="shrink-0 border-b border-border">

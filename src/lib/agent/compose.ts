@@ -104,6 +104,7 @@ function toApproval(policy: PolicyResult): ApprovalCard {
     jobTitle: policy.jobTitle,
     customerName: policy.customerName,
     ruleIds: policy.ruleIds,
+    jev: policy.jev,
   };
 }
 

@@ -15,7 +15,7 @@ The simulator is the web console. The agent is an in-process tool loop shaped li
 You say: **"Clear a $240 parts order for truck 3."**
 
 1. The host parses the utterance and asks the planner for one action at a time.
-2. `policy.check` approves, holds, or denies the ticket against the shop rules.
+2. `policy.check` approves, holds, or denies the ticket against the shop rules. Jev (TypeSafe System One) scores the same structured job — trade, notes, caps, SLA — as a decision aid. A hard shop deny stays a deny.
 3. `ledger.append` writes a hash-linked audit entry copied from that decision. It will not approve a ticket the policy tool denied.
 4. The console speaks the result, shows an approval card, and leaves the tool trail on screen.
 
@@ -40,7 +40,7 @@ Tools, in call order when a spend turn needs them:
 
 | Tool | Job |
 | --- | --- |
-| `policy.check` | Ticket limit, daily truck cap ($800), open job, trade match |
+| `policy.check` | Ticket limit, daily truck cap ($800), open job, trade match. Jev Choice + Noul sit behind this gate |
 | `ledger.append` | Append-only hash chain (CHP-lite). Spend rows must cite a real policy decision |
 | `jobs.lookup` | Seeded trucks, customers, windows, and blockers |
 | `sms.draft` | Writes a text. Does not send it |
@@ -77,8 +77,16 @@ Copy `.env.example` to `.env.local` only if you are turning Bedrock on. The defa
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Standard credential chain. Never commit these |
 | `BEDROCK_MODEL_ID` | Model or inference profile. Default `us.amazon.nova-lite-v1:0` |
 | `FIELD_DATA_DIR` | Optional override for the audit log directory |
+| `JEV_API_KEY` | Bearer key for [Jev System One](https://thejevai.com/v1/systemone). Unset: deterministic local fallback, no network call |
+| `JEV_MODEL` | Model id. Default `jev-1.13.0` |
+| `JEV_DUAL_RUN` | `true` records the shop-rule decision and the Jev score together. The shop rule still decides |
+| `JEV_PRIMARY` | `true` lets Jev hold or deny a ticket the shop rules would clear. A hard deny stays a deny, and a shop hold stays a hold |
 
-If Bedrock is enabled and the call fails, the turn falls back to the local planner and the header says so.
+Jev is text and structured state only (Choice, Score, Noul). FieldClear sends Choice plus four Noul questions. It does not draft the SMS and it does not replace the shop rules. The approval card and the audit row show the choice, the confidence, and a decision-aid line. Copy `.env.example` if you set a key. Never commit the key.
+
+With no key, the recorded demo is unchanged: `$240` for truck 3 still clears, and `$2,400` is still a hard deny. Leave `JEV_PRIMARY` unset for that script. A confidence under 0.70, or a strong trade / notes / SLA Noul, escalates to review only when `JEV_PRIMARY=true`.
+
+If Bedrock is enabled and the call fails, the turn falls back to the local planner and the header says so. If Jev is enabled and the call fails, `policy.check` uses the same local fallback and the card says so.
 
 ### AWS Builder mini challenge
 
@@ -112,7 +120,8 @@ Under three minutes, add one more beat: click **Clear a $2,400 compressor for tr
 - Parts auto-clear at or under $500, fuel $150, tools $300, anything else $100.
 - A truck can clear at most $800 in a shop day (America/New_York).
 - The truck needs an open job. Truck 4 is idle on purpose.
-- A trade mismatch (HVAC parts on a plumbing job) is held for the office.
+- A trade mismatch (HVAC parts on a plumbing job) is held for the office. Jev cannot turn that hold into a clear.
+- Jev is a decision aid on `policy.check`. It cannot override a hard deny.
 - Acme Plumbing's water heater is tomorrow on truck 3, tech Luis Ortega, contact Jordan Hale.
 
 ## Out of scope
@@ -128,6 +137,7 @@ src/lib/agent/bedrock.ts       Bedrock Converse planner
 src/lib/agent/compose.ts       spoken reply from tool results
 src/lib/mcp/registry.ts        listTools / callTool / listPrompts / listResources
 src/lib/tools/                 policy, ledger, jobs, sms
+src/lib/jev/client.ts          Jev System One client and local fallback
 src/app/api/agent/route.ts     streaming NDJSON for the console
 src/components/console/        Alexa+ console
 ```

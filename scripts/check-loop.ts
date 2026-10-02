@@ -10,6 +10,9 @@ import type { AssistantTurn, ToolStep } from "../src/lib/types";
 
 process.env.FIELD_DATA_DIR = mkdtempSync(path.join(tmpdir(), "fieldclear-"));
 delete process.env.USE_BEDROCK;
+delete process.env.JEV_API_KEY;
+delete process.env.JEV_PRIMARY;
+delete process.env.JEV_DUAL_RUN;
 
 async function ask(utterance: string): Promise<{ turn: AssistantTurn; steps: ToolStep[] }> {
   const steps: ToolStep[] = [];
@@ -50,6 +53,9 @@ async function main() {
   resetDemoLedger();
   const cleared = await ask("Clear a $240 parts order for truck 3");
   assert.equal(cleared.turn.approval?.decision, "approve");
+  assert.equal(cleared.turn.approval?.jev?.source, "fallback");
+  assert.equal(cleared.turn.approval?.jev?.choice, "approve");
+  assert.match(cleared.turn.approval?.jev?.disclaimer ?? "", /Decision aid/);
   assert.match(cleared.turn.say, /Truck 3 is clear/);
   assert.match(cleared.turn.say, /\$240/);
   assert.match(cleared.turn.say, /Acme Plumbing/);
