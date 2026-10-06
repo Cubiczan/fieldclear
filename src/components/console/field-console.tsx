@@ -306,7 +306,7 @@ export function FieldConsole({
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge variant="outline" className="h-6 cursor-default px-2">
-                {plannerState.kind === "bedrock" ? "Bedrock Converse" : "Local planner"}
+                {plannerState.kind === "bedrock" ? "Nova Lite" : "Local planner"}
               </Badge>
             </TooltipTrigger>
             <TooltipContent>{plannerState.note}</TooltipContent>

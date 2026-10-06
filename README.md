@@ -68,14 +68,14 @@ The console keeps the audit chain in the browser session and sends it with each 
 
 ## Environment
 
-Copy `.env.example` to `.env.local` only if you are turning Bedrock on. The default is the local heuristic planner, labeled **Local planner** in the header. It is a deterministic checklist, not a model.
+`npm run dev` uses the local heuristic planner, labeled **Local planner** in the header. It is a deterministic checklist, not a model. Production (`npm start` and Vercel) uses **Amazon Nova Lite** on Bedrock Converse, labeled **Nova Lite**, unless `USE_BEDROCK=false`.
 
 | Variable | Purpose |
 | --- | --- |
-| `USE_BEDROCK` | `true` sends each planning step to Amazon Bedrock Converse |
-| `AWS_REGION` | Region for the Bedrock client. Default `us-east-1` |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Standard credential chain. Never commit these |
-| `BEDROCK_MODEL_ID` | Model or inference profile. Default `us.amazon.nova-lite-v1:0` |
+| `USE_BEDROCK` | `true` forces Nova Lite in every environment. `false` forces the local planner and makes no AWS call. Unset: on in production, off in development |
+| `AWS_REGION` | Bedrock region. Required value `us-east-1` |
+| `BEDROCK_MODEL_ID` | Nova Lite inference profile. Default `us.amazon.nova-lite-v1:0`. Alternative foundation model: `amazon.nova-lite-v1:0`. Anthropic and Claude ids are refused |
+| `AWS_ROLE_ARN` | IAM role for Vercel OIDC. Required on Vercel. Do not store long-lived access keys |
 | `FIELD_DATA_DIR` | Optional override for the audit log directory |
 | `JEV_API_KEY` | Bearer key for [Jev System One](https://thejevai.com/v1/systemone). Unset: deterministic local fallback, no network call |
 | `JEV_MODEL` | Model id. Default `jev-1.13.0` |
@@ -88,15 +88,17 @@ With no key, the recorded demo is unchanged: `$240` for truck 3 still clears, an
 
 If Bedrock is enabled and the call fails, the turn falls back to the local planner and the header says so. If Jev is enabled and the call fails, `policy.check` uses the same local fallback and the card says so.
 
-### AWS Builder mini challenge
+### Amazon Nova Lite on Bedrock
 
-With credentials available:
+Production tool choice goes through [Bedrock Converse](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html) in `src/lib/agent/bedrock.ts`. The model is Amazon Nova Lite (`us.amazon.nova-lite-v1:0`). Lite is the right size because the planner returns one JSON tool choice. Policy, the ledger, jobs, and the SMS draft still run locally. If the call fails, the turn finishes on the local planner and the header says so.
+
+Local check against your AWS credentials:
 
 ```bash
 USE_BEDROCK=true AWS_REGION=us-east-1 npm run dev
 ```
 
-Tool choice then goes through [Bedrock Converse](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html) in `src/lib/agent/bedrock.ts`. Policy, the ledger, jobs, and the SMS draft still run locally. If your account requires a different inference profile, set `BEDROCK_MODEL_ID`.
+On Vercel, do not add `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY`. Enable [OIDC federation](https://vercel.com/docs/oidc/aws) and set `AWS_ROLE_ARN` to an IAM role that trusts the project's OIDC issuer and can `bedrock:InvokeModel` for Nova Lite in `us-east-1` (the `us.amazon.nova-lite-v1:0` inference profile and the `amazon.nova-lite-v1:0` foundation model). The app exchanges the Vercel OIDC token for short-lived credentials. Until `AWS_ROLE_ARN` is set, Vercel stays on the local planner. Copy `.env.example` for the full list. Never commit a key or a role ARN that you do not want in git; the example leaves `AWS_ROLE_ARN` commented out.
 
 [Strands Agents](https://strandsagents.com/) is a natural swap for the planner only. Implement the same `Decision` returned by `decideHeuristic` / `decideWithBedrock` (`{ type: "tool", name, arguments }` or `{ type: "final" }`) and call it from `nextDecision` in `src/lib/agent/loop.ts`. Leave `callTool` as the thing that actually runs. This repo does not depend on Strands, so the offline demo stays free of extra credentials.
 
@@ -133,7 +135,8 @@ Alexa developer console, skill certification, a real SMS send, Fire TV, Bee, Rin
 ```
 src/lib/agent/loop.ts          runAgentLoop — host
 src/lib/agent/planner.ts       local heuristic planner
-src/lib/agent/bedrock.ts       Bedrock Converse planner
+src/lib/agent/bedrock.ts       Nova Lite Bedrock Converse planner
+src/lib/agent/bedrock-config.ts  model id, region, and OIDC switch
 src/lib/agent/compose.ts       spoken reply from tool results
 src/lib/mcp/registry.ts        listTools / callTool / listPrompts / listResources
 src/lib/tools/                 policy, ledger, jobs, sms

@@ -1,18 +1,12 @@
 import type { JevRuntimeMode, PlannerStatus } from "../types";
+import { bedrockPlan } from "./bedrock-config";
 
 export function plannerStatus(): PlannerStatus {
-  const jev = jevRuntimeMode();
-  if (process.env.USE_BEDROCK === "true") {
-    return {
-      kind: "bedrock",
-      note: "USE_BEDROCK=true. Each step asks Amazon Bedrock Converse which tool to run. The tools still execute on this machine.",
-      jev,
-    };
-  }
+  const plan = bedrockPlan();
   return {
-    kind: "heuristic",
-    note: "Local heuristic planner. It reads the utterance and runs the tool checklist. Set USE_BEDROCK=true to use Amazon Bedrock Converse.",
-    jev,
+    kind: plan.kind,
+    note: plan.note,
+    jev: jevRuntimeMode(),
   };
 }
 
