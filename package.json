@@ -8,10 +8,11 @@
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
     "check:loop": "tsx scripts/check-loop.ts",
-    "test": "tsx --test --test-concurrency=1 src/lib/jev/client.test.ts"
+    "test": "tsx --test --test-concurrency=1 src/lib/jev/client.test.ts src/lib/agent/bedrock-config.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1144.0",
+    "@vercel/oidc-aws-credentials-provider": "^3.3.11",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.49.0",

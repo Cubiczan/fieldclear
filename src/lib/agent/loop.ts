@@ -11,6 +11,7 @@ import { callTool, listTools } from "../mcp/registry";
 import { nid } from "../ids";
 import type { PlannerKind, StreamEvent, ToolStep } from "../types";
 import { decideWithBedrock } from "./bedrock";
+import { bedrockPlan } from "./bedrock-config";
 import { composeTurn } from "./compose";
 import { parseIntent, type Intent } from "./intent";
 import { decideHeuristic, lastStructured, type Decision } from "./planner";
@@ -25,20 +26,18 @@ export async function runAgentLoop(input: {
   const intent = parseIntent(input.utterance);
   const tools = listTools();
   const steps: ToolStep[] = [];
-  const bedrockOn = process.env.USE_BEDROCK === "true";
-  let planner: PlannerKind = bedrockOn ? "bedrock" : "heuristic";
-  let note = bedrockOn
-    ? "Amazon Bedrock Converse is choosing tools. policy.check and ledger.append still run locally."
-    : "Local heuristic planner. No model key required. Set USE_BEDROCK=true to use Amazon Bedrock Converse.";
+  const plan = bedrockPlan();
+  let planner: PlannerKind = plan.kind;
+  let note = plan.note;
 
   await input.onEvent({ type: "meta", planner, note });
 
   try {
     for (let index = 0; index < MAX_STEPS; index += 1) {
-      const raw = await nextDecision(input.utterance, intent, steps, tools);
+      const raw = await nextDecision(input.utterance, intent, steps, tools, plan.kind === "bedrock");
       if (raw.fellBack && planner !== "heuristic") {
         planner = "heuristic";
-        note = `Bedrock was unavailable (${raw.fallbackReason ?? "call failed"}), so the local planner finished this turn.`;
+        note = `Amazon Nova Lite was unavailable (${raw.fallbackReason ?? "call failed"}), so the local planner finished this turn.`;
         await input.onEvent({ type: "meta", planner, note });
       }
 
@@ -82,8 +81,9 @@ async function nextDecision(
   intent: Intent,
   steps: ToolStep[],
   tools: ReturnType<typeof listTools>,
+  bedrock: boolean,
 ): Promise<Decision> {
-  if (process.env.USE_BEDROCK === "true") {
+  if (bedrock) {
     try {
       return await decideWithBedrock({ utterance, intent, steps, tools });
     } catch (error) {

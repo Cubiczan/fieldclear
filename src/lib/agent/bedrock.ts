@@ -1,5 +1,6 @@
 import type { McpToolDefinition } from "../mcp/types";
 import type { ToolStep } from "../types";
+import { bedrockAuthMode, bedrockModelId, bedrockRegion } from "./bedrock-config";
 import type { Intent } from "./intent";
 import { toolCatalogText, type Decision } from "./planner";
 
@@ -25,8 +26,9 @@ Rules:
 
 /**
  * Amazon Bedrock Converse planner.
- * Used only when USE_BEDROCK=true. Credentials come from the default AWS chain
- * (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_REGION).
+ * Model default is the Nova Lite inference profile `us.amazon.nova-lite-v1:0`.
+ * On Vercel, credentials come from OIDC (`AWS_ROLE_ARN`). Elsewhere, the AWS SDK
+ * default chain is used. Long-lived access keys are not read from the repo.
  */
 export async function decideWithBedrock(input: {
   utterance: string;
@@ -34,13 +36,18 @@ export async function decideWithBedrock(input: {
   steps: ToolStep[];
   tools: McpToolDefinition[];
 }): Promise<Decision> {
-  const region = process.env.AWS_REGION || "us-east-1";
-  const modelId = process.env.BEDROCK_MODEL_ID || "us.amazon.nova-lite-v1:0";
+  const region = bedrockRegion();
+  const modelId = bedrockModelId();
   const { BedrockRuntimeClient, ConverseCommand } = await import(
     "@aws-sdk/client-bedrock-runtime"
   );
 
-  const client = new BedrockRuntimeClient({ region });
+  const credentials = await bedrockCredentials(region);
+  const client = new BedrockRuntimeClient({
+    region,
+    maxAttempts: 1,
+    ...(credentials ? { credentials } : {}),
+  });
   const transcript = input.steps
     .map(
       (step, index) =>
@@ -76,6 +83,17 @@ export async function decideWithBedrock(input: {
       .trim() ?? "";
 
   return parseDecision(text);
+}
+
+async function bedrockCredentials(region: string) {
+  if (bedrockAuthMode() !== "oidc") return undefined;
+  const roleArn = process.env.AWS_ROLE_ARN?.trim();
+  if (!roleArn) return undefined;
+  const { awsCredentialsProvider } = await import("@vercel/oidc-aws-credentials-provider");
+  return awsCredentialsProvider({
+    roleArn,
+    clientConfig: { region },
+  });
 }
 
 function parseDecision(raw: string): Decision {

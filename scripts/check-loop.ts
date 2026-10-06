@@ -9,7 +9,8 @@ import { listPrompts, listResources, listTools } from "../src/lib/mcp/registry";
 import type { AssistantTurn, ToolStep } from "../src/lib/types";
 
 process.env.FIELD_DATA_DIR = mkdtempSync(path.join(tmpdir(), "fieldclear-"));
-delete process.env.USE_BEDROCK;
+// The offline check must stay on the heuristic planner, including when NODE_ENV=production.
+process.env.USE_BEDROCK = "false";
 delete process.env.JEV_API_KEY;
 delete process.env.JEV_PRIMARY;
 delete process.env.JEV_DUAL_RUN;
